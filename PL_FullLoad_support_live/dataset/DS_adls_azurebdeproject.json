@@ -1,0 +1,42 @@
+{
+    "name": "DS_adls_azurebdeproject",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_AzureDataLakeStorage",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "fileName": {
+                "type": "string"
+            },
+            "dbName": {
+                "type": "string"
+            },
+            "schemaName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@concat('LandingZone','/',dataset().dbName,'/',dataset().fileName)",
+                    "type": "Expression"
+                },
+                "fileSystem": "azure-bde-project"
+            },
+            "columnDelimiter": ";",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": ""
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

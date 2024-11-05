@@ -1,0 +1,263 @@
+{
+    "name": "PL_FullLoad",
+    "properties": {
+        "activities": [
+            {
+                "name": "Lookup_metastoretable",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT dbName, schemaName, tableName\nFROM dbo.metastore\nWHERE dbName='@{pipeline().parameters.dbName}'",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_AzureSqlTable_metastore",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach_tableinmetastore",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Lookup_metastoretable",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Lookup_metastoretable').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Copy data_onpremtoadls",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlServerSource",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "DelimitedTextSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextWriteSettings",
+                                        "quoteAllText": true,
+                                        "fileExtension": ".txt"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "validateDataConsistency": true,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DS_onpremSqlServerTable",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "tableName": {
+                                            "value": "@item().tableName",
+                                            "type": "Expression"
+                                        },
+                                        "dbName": {
+                                            "value": "@item().dbName",
+                                            "type": "Expression"
+                                        },
+                                        "schemaName": {
+                                            "value": "@item().schemaName",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "DS_adls_azurebdeproject",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "fileName": {
+                                            "value": "@item().tableName",
+                                            "type": "Expression"
+                                        },
+                                        "dbName": {
+                                            "value": "@item().dbName",
+                                            "type": "Expression"
+                                        },
+                                        "schemaName": {
+                                            "value": "@item().schemaName",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Lookup max_lastModifiedDate",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Copy data_onpremtoadls",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlServerSource",
+                                    "sqlReaderQuery": {
+                                        "value": "select max(lastModifiedDate) as maxLMD from @{item().tableName}",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_onpremSqlServerTable",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "tableName": {
+                                            "value": "@item().tableName",
+                                            "type": "Expression"
+                                        },
+                                        "dbName": {
+                                            "value": "@item().dbName",
+                                            "type": "Expression"
+                                        },
+                                        "schemaName": {
+                                            "value": "@item().schemaName",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Stored procedure to update_metastore_watermarkValue",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup max_lastModifiedDate",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[dbo].[update_metastore_table]",
+                                "storedProcedureParameters": {
+                                    "schemaName": {
+                                        "value": {
+                                            "value": "@item().schemaName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "tableName": {
+                                        "value": {
+                                            "value": "@item().tableName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "waterMarkValue": {
+                                        "value": {
+                                            "value": "@activity('Lookup max_lastModifiedDate').output.value[0].maxLMD",
+                                            "type": "Expression"
+                                        },
+                                        "type": "DateTime"
+                                    },
+                                    "loadType": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.loadType",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "pipelineName": {
+                                        "value": {
+                                            "value": "@pipeline().Pipeline",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_AzureSqlDatabase",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "loadType": {
+                "type": "string"
+            },
+            "dbName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-08-16T19:22:29Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

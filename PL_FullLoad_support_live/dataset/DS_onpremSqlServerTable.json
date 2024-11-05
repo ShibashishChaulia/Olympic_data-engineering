@@ -1,0 +1,40 @@
+{
+    "name": "DS_onpremSqlServerTable",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_onpremsql_tokolym",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "dbName": {
+                    "value": "@dataset().dbName",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "tableName": {
+                "type": "string"
+            },
+            "dbName": {
+                "type": "string"
+            },
+            "schemaName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "SqlServerTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schemaName",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().tableName",
+                "type": "Expression"
+            }
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,20 @@
+{
+    "name": "PL_IncrementalLoad",
+    "properties": {
+        "activities": [
+            {
+                "name": "Fail - IL not present",
+                "type": "Fail",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "message": "Incremental Load is required",
+                    "errorCode": "404"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2024-08-16T13:57:35Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

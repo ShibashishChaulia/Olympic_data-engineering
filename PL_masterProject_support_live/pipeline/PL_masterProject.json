@@ -1,0 +1,227 @@
+{
+    "name": "PL_masterProject",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch FL or IL",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.loadType",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "FL",
+                            "activities": [
+                                {
+                                    "name": "Execute Pipeline FL",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "PL_FullLoad",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "loadType": {
+                                                "value": "@pipeline().parameters.loadType",
+                                                "type": "Expression"
+                                            },
+                                            "dbName": {
+                                                "value": "@pipeline().parameters.dbName",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "IL",
+                            "activities": [
+                                {
+                                    "name": "Execute Pipeline IL",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "PL_IncrementalLoad",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail - Invalid Case",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": "Invalid Option ",
+                                "errorCode": "404"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Notebook LandingZone to BronzeZone",
+                "type": "DatabricksNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "Switch FL or IL",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebookPath": "/Project-tokyolmyp/LandingZone-to-BronzeZone",
+                    "baseParameters": {
+                        "dbName": {
+                            "value": "@pipeline().parameters.dbName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureDatabricks",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Notebook BronzeZone to SilverZone",
+                "type": "DatabricksNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "Notebook LandingZone to BronzeZone",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebookPath": "/Project-tokyolmyp/BronzeZone-to-SilverZone",
+                    "baseParameters": {
+                        "dbName": {
+                            "value": "@pipeline().parameters.dbName",
+                            "type": "Expression"
+                        },
+                        "loadType": {
+                            "value": "@pipeline().parameters.loadType",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureDatabricks",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Notebook SilverZone to GoldZone",
+                "type": "DatabricksNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "Notebook BronzeZone to SilverZone",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebookPath": "/Project-tokyolmyp/SilverZone-to-GoldZone",
+                    "baseParameters": {
+                        "dbName": {
+                            "value": "@pipeline().parameters.dbName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureDatabricks",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Web to Send Pipeline Status via Email",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "Switch FL or IL",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "POST",
+                    "url": "https://prod-23.northcentralus.logic.azure.com:443/workflows/77e92a7f8b834d87aa39ef016c5f762c/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=A0fj8NTb24HN76eP1lLnnkGlOzDM6PBgqEfFN41CtxE",
+                    "body": {
+                        "value": "{\n  \"loadStatus\": '@{activity('Switch FL or IL').output.expression}',\n  \"pipelineName\": '@{pipeline().Pipeline}',\n  \"runId\": '@{pipeline().RunId}',\n  \"startTime\": \"@{convertFromUtc(pipeline().TriggerTime,'India Standard Time')}\",\n  \"endTime\": \"@{convertFromUtc(utcNow(),'India Standard Time')}\",\n  \"errorMessage\": \"Failed Due to an inner activity\"\n}\n",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "loadType": {
+                "type": "string"
+            },
+            "dbName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-08-17T06:52:30Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

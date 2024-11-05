@@ -1,0 +1,34 @@
+{
+    "name": "DS_AzureSqlTable_metastore",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_AzureSqlDatabase",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [
+            {
+                "name": "dbName",
+                "type": "varchar"
+            },
+            {
+                "name": "schemaName",
+                "type": "varchar"
+            },
+            {
+                "name": "tableName",
+                "type": "varchar"
+            },
+            {
+                "name": "watermarkColName",
+                "type": "varchar"
+            }
+        ],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "metastore"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

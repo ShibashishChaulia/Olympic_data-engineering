@@ -1,0 +1,23 @@
+{
+    "now": "2024-08-17T08:16:13.641Z",
+    "perfNow": 10137307.200000018,
+    "diagnosticCorrelation": "3e1e5f94-dc09-49aa-932a-944504c8edc4",
+    "source": "DownloadSupportFiles",
+    "environment": {
+        "productName": "adf",
+        "buildVersion": "1.0.080224.3",
+        "environmentType": 3,
+        "resourceName": "ADF-tokolym",
+        "resourceRegion": "eastus",
+        "resourceGroup": "RG-Project1-tokolym",
+        "subscriptionId": "dd32d8a0-8b70-4d29-8d8b-94a7ad9ba395",
+        "sessionId": "AIbRYZt8b3tvgKRj/GkBH3",
+        "operationId": "",
+        "gitType": "live",
+        "loggingKey": "725f323c-43f7-4c5c-9f4c-5c349a6fcfaa"
+    },
+    "additionalInfo": {
+        "selectedResource": "PL_masterProject",
+        "selectedResourceType": "pipeline"
+    }
+}

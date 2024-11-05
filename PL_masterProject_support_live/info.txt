@@ -1,0 +1,6 @@
+selected resource name:		PL_masterProject
+selected resource type:		pipeline
+factory name:			ADF-tokolym
+factory location:		eastus
+subscription id:		dd32d8a0-8b70-4d29-8d8b-94a7ad9ba395
+time of download (UTC):		Sat, 17 Aug 2024 08:16:13 GMT
